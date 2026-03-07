@@ -1,6 +1,22 @@
 const http = require('http');
-const PORT = 3000;
+const fs = require("fs");
+const PORT = process.env.PORT || 3000;
+let database = {};
 
+// đọc database khi server start
+try {
+  database = JSON.parse(fs.readFileSync("database.json", "utf8"));
+} catch (err) {
+  database = {};
+}
+function handleApi(req, res) {
+  if (req.url === "/api/test") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "backend running" }));
+    return true;
+  }
+  return false;
+}
 const htmlContent = `<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -516,10 +532,12 @@ document.addEventListener("DOMContentLoaded",function(){initApp()});
 </html>`;
 
 const server = http.createServer((req, res) => {
+
+  if (handleApi(req, res)) return;
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(htmlContent + scriptContent);
 });
 
 server.listen(PORT, () => {
-  console.log('Server đang chạy tại http://localhost:' + PORT);
+  console.log("Server running on port " + PORT);
 });
