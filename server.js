@@ -1,20 +1,114 @@
 const http = require('http');
 const fs = require("fs");
 const PORT = process.env.PORT || 3000;
-let database = {};
 
-// đọc database khi server start
+const DB_PATH = "database.json";
+
+// Đọc database khi server start
+let database = {};
 try {
-  database = JSON.parse(fs.readFileSync("database.json", "utf8"));
+  database = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+  console.log("Đã đọc database.json thành công");
 } catch (err) {
-  database = {};
+  console.log("Không đọc được database.json, tạo mới");
+  database = {
+    recruitmentRequests: [],
+    candidates: [],
+    interviews: [],
+    interviewResults: [],
+    onboardingRecords: [],
+    history: [],
+    counters: {
+      recruitmentRequestCounter: 1,
+      candidateCounter: 1,
+      interviewFormCounter: 1
+    }
+  };
 }
+
+// Đảm bảo database có đủ các trường
+if (!database.recruitmentRequests) database.recruitmentRequests = [];
+if (!database.candidates) database.candidates = [];
+if (!database.interviews) database.interviews = [];
+if (!database.interviewResults) database.interviewResults = [];
+if (!database.onboardingRecords) database.onboardingRecords = [];
+if (!database.history) database.history = [];
+if (!database.counters) database.counters = { recruitmentRequestCounter: 1, candidateCounter: 1, interviewFormCounter: 1 };
+
+// Hàm lưu database xuống file
+function saveDatabase() {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(database, null, 2), "utf8");
+    console.log("Đã lưu database.json");
+  } catch (err) {
+    console.error("Lỗi ghi database:", err);
+  }
+}
+
+// Hàm đọc body từ request POST
+function readBody(req) {
+  return new Promise(function(resolve, reject) {
+    var body = '';
+    req.on('data', function(chunk) { body += chunk.toString(); });
+    req.on('end', function() {
+      try {
+        resolve(JSON.parse(body));
+      } catch (e) {
+        resolve({});
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
 function handleApi(req, res) {
-  if (req.url === "/api/test") {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return true;
+  }
+
+  // API test
+  if (req.url === "/api/test" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "backend running" }));
     return true;
   }
+
+  // API LẤY TOÀN BỘ DỮ LIỆU
+  if (req.url === "/api/data" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(database));
+    return true;
+  }
+
+  // API LƯU TOÀN BỘ DỮ LIỆU
+  if (req.url === "/api/data" && req.method === "POST") {
+    readBody(req).then(function(body) {
+      if (body.recruitmentRequests !== undefined) database.recruitmentRequests = body.recruitmentRequests;
+      if (body.candidates !== undefined) database.candidates = body.candidates;
+      if (body.interviews !== undefined) database.interviews = body.interviews;
+      if (body.interviewResults !== undefined) database.interviewResults = body.interviewResults;
+      if (body.onboardingRecords !== undefined) database.onboardingRecords = body.onboardingRecords;
+      if (body.history !== undefined) database.history = body.history;
+      if (body.counters !== undefined) database.counters = body.counters;
+
+      saveDatabase();
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, message: "Đã lưu dữ liệu" }));
+    }).catch(function(err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: false, message: err.message }));
+    });
+    return true;
+  }
+
   return false;
 }
 const htmlContent = `<!DOCTYPE html>
@@ -403,6 +497,49 @@ var departments=['Sản xuất 1','Sản xuất 2.1','Sản xuất 2.2','Sản x
 var levels=['Công nhân','Trợ lý','Nhân viên','Kỹ sư','Trưởng nhóm','Trưởng bộ phận','Trưởng phòng'];
 var educationLevels=['THCS','THPT','Trung cấp','Cao đẳng','Đại học','Thạc sĩ','Tiến sĩ'];
 var currentUser=null,clockInterval=null;
+function loadDataFromServer(){
+  return fetch('/api/data')
+    .then(function(response){return response.json()})
+    .then(function(data){
+      if(data.recruitmentRequests)recruitmentRequests=data.recruitmentRequests;
+      if(data.candidates)candidates=data.candidates;
+      if(data.interviews)interviews=data.interviews;
+      if(data.interviewResults)interviewResults=data.interviewResults;
+      if(data.onboardingRecords)onboardingRecords=data.onboardingRecords;
+      if(data.history)actionHistory=data.history;
+      if(data.counters){
+        recruitmentRequestCounter=data.counters.recruitmentRequestCounter||1;
+        candidateCounter=data.counters.candidateCounter||1;
+        interviewFormCounter=data.counters.interviewFormCounter||1;
+      }
+      console.log('Đã tải dữ liệu từ server');
+    })
+    .catch(function(err){console.error('Lỗi tải dữ liệu:',err)});
+}
+
+function saveDataToServer(){
+  var payload={
+    recruitmentRequests:recruitmentRequests,
+    candidates:candidates,
+    interviews:interviews,
+    interviewResults:interviewResults,
+    onboardingRecords:onboardingRecords,
+    history:actionHistory,
+    counters:{
+      recruitmentRequestCounter:recruitmentRequestCounter,
+      candidateCounter:candidateCounter,
+      interviewFormCounter:interviewFormCounter
+    }
+  };
+  fetch('/api/data',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  })
+  .then(function(response){return response.json()})
+  .then(function(result){console.log('Đã lưu:',result.message)})
+  .catch(function(err){console.error('Lỗi lưu:',err)});
+}
 
 // CẬP NHẬT PHÂN QUYỀN (CHỈ TRƯỞNG PHÒNG HCNS)
 function isAdmin(){
@@ -429,7 +566,7 @@ function operatorInfo(r){return r.employeeName+' ('+r.employeeId+')'}
 function operatorFull(r){return r.employeeName+' ('+r.employeeId+') - '+r.employeePosition+' - '+r.employeeDept}
 function na(v){return v||'Không có'}
 function resetForm(ids){ids.forEach(function(id){var el=document.getElementById(id);if(!el)return;if(el.type==='checkbox'||el.type==='radio')el.checked=false;else if(el.tagName==='SELECT')el.selectedIndex=0;else el.value=''})}
-function addHistory(action,target,code,detail){actionHistory.push({action:action,target:target,code:code,detail:detail||'',employeeId:currentUser?currentUser.id:'',employeeName:currentUser?currentUser.name:'',employeePosition:currentUser?currentUser.position:'',employeeDept:currentUser?currentUser.department:'',timestamp:getNow()})}
+function addHistory(action,target,code,detail){actionHistory.push({action:action,target:target,code:code,detail:detail||'',employeeId:currentUser?currentUser.id:'',employeeName:currentUser?currentUser.name:'',employeePosition:currentUser?currentUser.position:'',employeeDept:currentUser?currentUser.department:'',timestamp:getNow()});saveDataToServer()}
 function getHiredCount(recCode){var c=0;onboardingRecords.forEach(function(ob){var cand=candidates.find(function(x){return x.code===ob.candidateCode});if(cand&&cand.recruitCode===recCode)c++});return c}
 function getRemainingQuantity(rec){return Math.max(0,rec.quantity-getHiredCount(rec.code))}
 function validateLogin(){var e=[];var id=document.getElementById('loginEmpId').value.trim();var name=document.getElementById('loginEmpName').value.trim();if(!id)e.push('Mã nhân viên');if(!name)e.push('Họ và tên');if(name&&name!==name.toUpperCase())e.push('Họ và tên phải IN HOA');if(!document.getElementById('loginEmpPosition').value)e.push('Chức vụ');if(!document.getElementById('loginEmpDept').value)e.push('Phòng ban');if(e.length>0){alert('Vui lòng kiểm tra:\\n- '+e.join('\\n- '));return false}return true}
@@ -468,7 +605,7 @@ function exportTableToExcel(tableId,fileName){var tbl=document.getElementById(ta
 function exportDataToExcel(headers,rows,fileName){var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>td{mso-number-format:"\\\\@";white-space:normal;word-wrap:break-word}td.cv-col{min-width:150px;width:200px}</style></head><body><table border="1"><thead><tr>';headers.forEach(function(h){html+='<th>'+h+'</th>'});html+='</tr></thead><tbody>';rows.forEach(function(row){html+='<tr>';row.forEach(function(cell,ci){var cls=headers[ci]==='CV'?' class="cv-col"':'';html+='<td'+cls+'>'+(cell===undefined||cell===null?'':cell)+'</td>'});html+='</tr>'});html+='</tbody></table></body></html>';var blob=new Blob([html],{type:'application/vnd.ms-excel'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fileName+'.xls';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)}
 function doLogin(){if(!validateLogin())return;currentUser={id:document.getElementById('loginEmpId').value.trim(),name:document.getElementById('loginEmpName').value.trim().toUpperCase(),position:document.getElementById('loginEmpPosition').value,department:document.getElementById('loginEmpDept').value};document.getElementById('barEmpId').textContent=currentUser.id;document.getElementById('barEmpName').textContent=currentUser.name;document.getElementById('barEmpPosition').textContent=currentUser.position;document.getElementById('barEmpDept').textContent=currentUser.department;document.getElementById('loginView').classList.remove('active');document.getElementById('appContainer').style.display='block';showView('mainView');updateClock();clockInterval=setInterval(updateClock,1000);addHistory('Đăng nhập','Hệ thống',currentUser.id,currentUser.name+' đã đăng nhập');updateAdminVisibility()}
 function doLogout(){addHistory('Đăng xuất','Hệ thống',currentUser?currentUser.id:'','Đã đăng xuất');Object.keys(activeEditors).forEach(function(key){activeEditors[key]=activeEditors[key].filter(function(e){return e.userId!==currentUser.id});if(activeEditors[key].length===0)delete activeEditors[key]});hideConcurrentUsersDisplay();currentUser=null;if(clockInterval){clearInterval(clockInterval);clockInterval=null}document.getElementById('appContainer').style.display='none';document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});document.getElementById('loginEmpId').value='';document.getElementById('loginEmpName').value='';document.getElementById('loginEmpPosition').selectedIndex=0;document.getElementById('loginEmpDept').selectedIndex=0;showView('loginView')}
-function initApp(){populateSelect('loginEmpDept',departments,'Chọn phòng ban');populateSelect('recDepartment',departments,'Chọn phòng ban');populateSelect('recLevel',levels,'Chọn cấp bậc');populateSelect('recEducation',educationLevels,'Chọn trình độ');populateSelect('candDepartment',departments,'Chọn bộ phận');populateSelect('candEducationLevel',educationLevels,'Chọn trình độ');showView('loginView')}
+function initApp(){populateSelect('loginEmpDept',departments,'Chọn phòng ban');populateSelect('recDepartment',departments,'Chọn phòng ban');populateSelect('recLevel',levels,'Chọn cấp bậc');populateSelect('recEducation',educationLevels,'Chọn trình độ');populateSelect('candDepartment',departments,'Chọn bộ phận');populateSelect('candEducationLevel',educationLevels,'Chọn trình độ');loadDataFromServer().then(function(){showView('loginView')}).catch(function(){showView('loginView')})}
 document.getElementById('btnLogin').addEventListener('click',function(){doLogin()});
 document.getElementById('loginEmpName').addEventListener('input',function(){this.value=this.value.toUpperCase()});
 document.getElementById('btnLogout').addEventListener('click',function(){if(confirm('Bạn có chắc muốn đăng xuất?'))doLogout()});

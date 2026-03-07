@@ -4,5 +4,33 @@
   "interviews": [],
   "interviewResults": [],
   "onboardingRecords": [],
-  "history": []
+  "history": [
+    {
+      "action": "Đăng nhập",
+      "target": "Hệ thống",
+      "code": "268493",
+      "detail": "ĐỖ THANH BÌNH đã đăng nhập",
+      "employeeId": "268493",
+      "employeeName": "ĐỖ THANH BÌNH",
+      "employeePosition": "Trưởng phòng",
+      "employeeDept": "Hành chính nhân sự",
+      "timestamp": "2026-03-07T15:34:55.240Z"
+    },
+    {
+      "action": "Đăng nhập",
+      "target": "Hệ thống",
+      "code": "268493",
+      "detail": "ĐỖ THANH BÌNH đã đăng nhập",
+      "employeeId": "268493",
+      "employeeName": "ĐỖ THANH BÌNH",
+      "employeePosition": "Trưởng phòng",
+      "employeeDept": "Hành chính nhân sự",
+      "timestamp": "2026-03-07T15:35:11.584Z"
+    }
+  ],
+  "counters": {
+    "recruitmentRequestCounter": 1,
+    "candidateCounter": 1,
+    "interviewFormCounter": 1
+  }
 }
