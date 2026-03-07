@@ -1,51 +1,100 @@
 const http = require('http');
-const fs = require("fs");
+const https = require('https');
 const PORT = process.env.PORT || 3000;
 
-const DB_PATH = "database.json";
+// ===== CẤU HÌNH JSONBIN.IO =====
+const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY || '';
+const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID || '';
 
-// Đọc database khi server start
-let database = {};
-try {
-  database = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
-  console.log("Đã đọc database.json thành công");
-} catch (err) {
-  console.log("Không đọc được database.json, tạo mới");
-  database = {
-    recruitmentRequests: [],
-    candidates: [],
-    interviews: [],
-    interviewResults: [],
-    onboardingRecords: [],
-    history: [],
-    counters: {
-      recruitmentRequestCounter: 1,
-      candidateCounter: 1,
-      interviewFormCounter: 1
-    }
-  };
-}
-
-// Đảm bảo database có đủ các trường
-if (!database.recruitmentRequests) database.recruitmentRequests = [];
-if (!database.candidates) database.candidates = [];
-if (!database.interviews) database.interviews = [];
-if (!database.interviewResults) database.interviewResults = [];
-if (!database.onboardingRecords) database.onboardingRecords = [];
-if (!database.history) database.history = [];
-if (!database.counters) database.counters = { recruitmentRequestCounter: 1, candidateCounter: 1, interviewFormCounter: 1 };
-
-// Hàm lưu database xuống file
-function saveDatabase() {
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(database, null, 2), "utf8");
-    console.log("Đã lưu database.json");
-  } catch (err) {
-    console.error("Lỗi ghi database:", err);
+// Database trong bộ nhớ
+let database = {
+  recruitmentRequests: [],
+  candidates: [],
+  interviews: [],
+  interviewResults: [],
+  onboardingRecords: [],
+  history: [],
+  counters: {
+    recruitmentRequestCounter: 1,
+    candidateCounter: 1,
+    interviewFormCounter: 1
   }
+};
+
+// Hàm gọi JSONBin API
+function jsonbinRequest(method, data) {
+  return new Promise(function(resolve, reject) {
+    var options = {
+      hostname: 'api.jsonbin.io',
+      path: '/v3/b/' + JSONBIN_BIN_ID,
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_API_KEY
+      }
+    };
+
+    if (method === 'GET') {
+      options.path += '/latest';
+    }
+
+    var req = https.request(options, function(res) {
+      var body = '';
+      res.on('data', function(chunk) { body += chunk; });
+      res.on('end', function() {
+        try {
+          var parsed = JSON.parse(body);
+          resolve(parsed);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+
+    req.on('error', reject);
+
+    if (data) {
+      req.write(JSON.stringify(data));
+    }
+
+    req.end();
+  });
 }
 
-// Hàm đọc body từ request POST
+// Đọc database từ JSONBin khi server start
+function loadFromJsonBin() {
+  return jsonbinRequest('GET')
+    .then(function(result) {
+      if (result.record) {
+        database = result.record;
+        // Đảm bảo có đủ các trường
+        if (!database.recruitmentRequests) database.recruitmentRequests = [];
+        if (!database.candidates) database.candidates = [];
+        if (!database.interviews) database.interviews = [];
+        if (!database.interviewResults) database.interviewResults = [];
+        if (!database.onboardingRecords) database.onboardingRecords = [];
+        if (!database.history) database.history = [];
+        if (!database.counters) database.counters = { recruitmentRequestCounter: 1, candidateCounter: 1, interviewFormCounter: 1 };
+        console.log('Da doc du lieu tu JSONBin thanh cong');
+      }
+    })
+    .catch(function(err) {
+      console.error('Loi doc JSONBin:', err.message);
+    });
+}
+
+// Lưu database lên JSONBin
+function saveToJsonBin() {
+  return jsonbinRequest('PUT', database)
+    .then(function(result) {
+      console.log('Da luu len JSONBin thanh cong');
+    })
+    .catch(function(err) {
+      console.error('Loi luu JSONBin:', err.message);
+    });
+}
+
+// Đọc body từ request POST
 function readBody(req) {
   return new Promise(function(resolve, reject) {
     var body = '';
@@ -80,14 +129,14 @@ function handleApi(req, res) {
     return true;
   }
 
-  // API LẤY TOÀN BỘ DỮ LIỆU
+  // API LẤY DỮ LIỆU
   if (req.url === "/api/data" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(database));
     return true;
   }
 
-  // API LƯU TOÀN BỘ DỮ LIỆU
+  // API LƯU DỮ LIỆU
   if (req.url === "/api/data" && req.method === "POST") {
     readBody(req).then(function(body) {
       if (body.recruitmentRequests !== undefined) database.recruitmentRequests = body.recruitmentRequests;
@@ -98,10 +147,14 @@ function handleApi(req, res) {
       if (body.history !== undefined) database.history = body.history;
       if (body.counters !== undefined) database.counters = body.counters;
 
-      saveDatabase();
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true, message: "Đã lưu dữ liệu" }));
+      // Lưu lên JSONBin
+      saveToJsonBin().then(function() {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, message: "Da luu du lieu" }));
+      }).catch(function(err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, message: err.message }));
+      });
     }).catch(function(err) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: false, message: err.message }));
@@ -675,6 +728,15 @@ const server = http.createServer((req, res) => {
   res.end(htmlContent + scriptContent);
 });
 
-server.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+// Đọc dữ liệu từ JSONBin trước, rồi mới start server
+loadFromJsonBin().then(function() {
+  server.listen(PORT, function() {
+    console.log("Server running on port " + PORT);
+    console.log("Database loaded with " + database.recruitmentRequests.length + " recruitment requests");
+    console.log("Database loaded with " + database.candidates.length + " candidates");
+  });
+}).catch(function() {
+  server.listen(PORT, function() {
+    console.log("Server running on port " + PORT + " (without saved data)");
+  });
 });

@@ -1,5 +1,43 @@
 {
-  "recruitmentRequests": [],
+  "recruitmentRequests": [
+    {
+      "code": "P00001",
+      "department": "Hành chính nhân sự",
+      "proposer": "ĐỖ THANH BÌNH",
+      "position": "Nhân viên Tuyển dụng",
+      "level": "Nhân viên",
+      "quantity": 1,
+      "reasons": [
+        "Mở rộng hoạt động"
+      ],
+      "needDate": "2026-03-31",
+      "reportTo": "ĐỖ THANH BÌNH",
+      "workplaces": [
+        "Nhà máy 1"
+      ],
+      "worktimes": [
+        "Hành chính"
+      ],
+      "environment": "",
+      "jobDesc": "Thực hiện công việc tuyển dụng",
+      "benefits": "",
+      "salaryRange": "",
+      "education": "Đại học",
+      "major": "",
+      "experience": "",
+      "techSkill": "",
+      "softSkill": "",
+      "language": "",
+      "certificate": "",
+      "deadline": "2026-03-25",
+      "employeeId": "268493",
+      "employeeName": "ĐỖ THANH BÌNH",
+      "employeePosition": "Trưởng phòng",
+      "employeeDept": "Hành chính nhân sự",
+      "timestamp": "2026-03-07T15:41:22.047Z",
+      "editHistory": []
+    }
+  ],
   "candidates": [],
   "interviews": [],
   "interviewResults": [],
@@ -26,10 +64,43 @@
       "employeePosition": "Trưởng phòng",
       "employeeDept": "Hành chính nhân sự",
       "timestamp": "2026-03-07T15:35:11.584Z"
+    },
+    {
+      "action": "Đăng nhập",
+      "target": "Hệ thống",
+      "code": "268493",
+      "detail": "ĐỖ THANH BÌNH đã đăng nhập",
+      "employeeId": "268493",
+      "employeeName": "ĐỖ THANH BÌNH",
+      "employeePosition": "Trưởng phòng",
+      "employeeDept": "Hành chính nhân sự",
+      "timestamp": "2026-03-07T15:40:34.127Z"
+    },
+    {
+      "action": "Tạo mới",
+      "target": "Nhu cầu tuyển dụng",
+      "code": "P00001",
+      "detail": "Tạo mới: Nhân viên Tuyển dụng - Hành chính nhân sự",
+      "employeeId": "268493",
+      "employeeName": "ĐỖ THANH BÌNH",
+      "employeePosition": "Trưởng phòng",
+      "employeeDept": "Hành chính nhân sự",
+      "timestamp": "2026-03-07T15:41:22.047Z"
+    },
+    {
+      "action": "Đăng nhập",
+      "target": "Hệ thống",
+      "code": "268493",
+      "detail": "ĐỖ THANH BÌNH đã đăng nhập",
+      "employeeId": "268493",
+      "employeeName": "ĐỖ THANH BÌNH",
+      "employeePosition": "Trưởng phòng",
+      "employeeDept": "Hành chính nhân sự",
+      "timestamp": "2026-03-07T15:41:34.727Z"
     }
   ],
   "counters": {
-    "recruitmentRequestCounter": 1,
+    "recruitmentRequestCounter": 2,
     "candidateCounter": 1,
     "interviewFormCounter": 1
   }
