@@ -2,11 +2,13 @@ const http = require('http');
 const https = require('https');
 const PORT = process.env.PORT || 3000;
 
-// ===== CẤU HÌNH JSONBIN.IO =====
 const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY || '';
 const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID || '';
 
-// Database trong bộ nhớ
+if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) {
+  console.error('CANH BAO: Chua cau hinh JSONBIN_API_KEY hoac JSONBIN_BIN_ID');
+}
+
 let database = {
   recruitmentRequests: [],
   candidates: [],
@@ -21,53 +23,74 @@ let database = {
   }
 };
 
-// Hàm gọi JSONBin API
-function jsonbinRequest(method, data) {
+let isDataLoaded = false;
+
+function jsonbinRequest(method, data, retryCount) {
+  if (!retryCount) retryCount = 0;
+  var maxRetries = 3;
   return new Promise(function(resolve, reject) {
+    var path = '/v3/b/' + JSONBIN_BIN_ID;
+    if (method === 'GET') path += '/latest';
+    var bodyStr = data ? JSON.stringify(data) : null;
     var options = {
       hostname: 'api.jsonbin.io',
-      path: '/v3/b/' + JSONBIN_BIN_ID,
+      path: path,
       method: method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Master-Key': JSONBIN_API_KEY
+        'X-Master-Key': JSONBIN_API_KEY,
+        'X-Bin-Versioning': 'false'
       }
     };
-
-    if (method === 'GET') {
-      options.path += '/latest';
-    }
-
+    if (bodyStr) options.headers['Content-Length'] = Buffer.byteLength(bodyStr);
     var req = https.request(options, function(res) {
       var body = '';
       res.on('data', function(chunk) { body += chunk; });
       res.on('end', function() {
         try {
           var parsed = JSON.parse(body);
-          resolve(parsed);
-        } catch (e) {
-          reject(e);
-        }
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(parsed);
+          } else {
+            console.error('JSONBin error ' + res.statusCode + ':', body);
+            if (retryCount < maxRetries) {
+              console.log('Retry lan ' + (retryCount + 1));
+              setTimeout(function() {
+                jsonbinRequest(method, data, retryCount + 1).then(resolve).catch(reject);
+              }, 1000 * (retryCount + 1));
+            } else {
+              reject(new Error('JSONBin error: ' + res.statusCode));
+            }
+          }
+        } catch (e) { reject(e); }
       });
     });
-
-    req.on('error', reject);
-
-    if (data) {
-      req.write(JSON.stringify(data));
-    }
-
+    req.on('error', function(err) {
+      if (retryCount < maxRetries) {
+        setTimeout(function() {
+          jsonbinRequest(method, data, retryCount + 1).then(resolve).catch(reject);
+        }, 1000 * (retryCount + 1));
+      } else { reject(err); }
+    });
+    req.setTimeout(15000, function() {
+      req.destroy();
+      if (retryCount < maxRetries) {
+        setTimeout(function() {
+          jsonbinRequest(method, data, retryCount + 1).then(resolve).catch(reject);
+        }, 1000 * (retryCount + 1));
+      } else { reject(new Error('Timeout')); }
+    });
+    if (bodyStr) req.write(bodyStr);
     req.end();
   });
 }
 
-// Đọc database từ JSONBin khi server start
 function loadFromJsonBin() {
+  console.log('Dang doc du lieu tu JSONBin...');
   return jsonbinRequest('GET')
     .then(function(result) {
-      if (result.record) {
+      if (result && result.record) {
         database = result.record;
-        // Đảm bảo có đủ các trường
         if (!database.recruitmentRequests) database.recruitmentRequests = [];
         if (!database.candidates) database.candidates = [];
         if (!database.interviews) database.interviews = [];
@@ -75,93 +98,114 @@ function loadFromJsonBin() {
         if (!database.onboardingRecords) database.onboardingRecords = [];
         if (!database.history) database.history = [];
         if (!database.counters) database.counters = { recruitmentRequestCounter: 1, candidateCounter: 1, interviewFormCounter: 1 };
-        console.log('Da doc du lieu tu JSONBin thanh cong');
+        isDataLoaded = true;
+        console.log('=== DOC JSONBIN THANH CONG ===');
+        console.log('recruitmentRequests: ' + database.recruitmentRequests.length);
+        console.log('candidates: ' + database.candidates.length);
+      } else {
+        console.error('JSONBin tra ve du lieu rong');
+        isDataLoaded = true;
       }
     })
     .catch(function(err) {
-      console.error('Loi doc JSONBin:', err.message);
+      console.error('LOI DOC JSONBIN:', err.message);
+      isDataLoaded = true;
     });
 }
 
-// Lưu database lên JSONBin
+let saveTimeout = null;
+let isSaving = false;
+
 function saveToJsonBin() {
-  return jsonbinRequest('PUT', database)
-    .then(function(result) {
-      console.log('Da luu len JSONBin thanh cong');
-    })
-    .catch(function(err) {
-      console.error('Loi luu JSONBin:', err.message);
-    });
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(function() {
+    if (isSaving) {
+      setTimeout(function() { saveToJsonBin(); }, 1000);
+      return;
+    }
+    isSaving = true;
+    console.log('Dang luu len JSONBin...');
+    var dataToSave = JSON.parse(JSON.stringify(database));
+    jsonbinRequest('PUT', dataToSave)
+      .then(function() {
+        isSaving = false;
+        console.log('=== LUU JSONBIN THANH CONG ===');
+      })
+      .catch(function(err) {
+        isSaving = false;
+        console.error('LOI LUU JSONBIN:', err.message);
+      });
+  }, 500);
 }
 
-// Đọc body từ request POST
 function readBody(req) {
   return new Promise(function(resolve, reject) {
     var body = '';
     req.on('data', function(chunk) { body += chunk.toString(); });
     req.on('end', function() {
-      try {
-        resolve(JSON.parse(body));
-      } catch (e) {
-        resolve({});
-      }
+      try { resolve(JSON.parse(body)); }
+      catch (e) { reject(new Error('JSON khong hop le')); }
     });
     req.on('error', reject);
   });
 }
 
 function handleApi(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
     return true;
   }
-
-  // API test
   if (req.url === "/api/test" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "backend running" }));
+    res.end(JSON.stringify({
+      status: "backend running",
+      dataLoaded: isDataLoaded,
+      recruitmentCount: database.recruitmentRequests.length,
+      candidateCount: database.candidates.length,
+      binId: JSONBIN_BIN_ID ? 'configured' : 'missing',
+      apiKey: JSONBIN_API_KEY ? 'configured' : 'missing'
+    }));
     return true;
   }
-
-  // API LẤY DỮ LIỆU
   if (req.url === "/api/data" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(database));
     return true;
   }
-
-  // API LƯU DỮ LIỆU
   if (req.url === "/api/data" && req.method === "POST") {
     readBody(req).then(function(body) {
-      if (body.recruitmentRequests !== undefined) database.recruitmentRequests = body.recruitmentRequests;
-      if (body.candidates !== undefined) database.candidates = body.candidates;
-      if (body.interviews !== undefined) database.interviews = body.interviews;
-      if (body.interviewResults !== undefined) database.interviewResults = body.interviewResults;
-      if (body.onboardingRecords !== undefined) database.onboardingRecords = body.onboardingRecords;
-      if (body.history !== undefined) database.history = body.history;
-      if (body.counters !== undefined) database.counters = body.counters;
-
-      // Lưu lên JSONBin
-      saveToJsonBin().then(function() {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, message: "Da luu du lieu" }));
-      }).catch(function(err) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, message: err.message }));
-      });
+      var changed = false;
+      if (body.recruitmentRequests !== undefined) { database.recruitmentRequests = body.recruitmentRequests; changed = true; }
+      if (body.candidates !== undefined) { database.candidates = body.candidates; changed = true; }
+      if (body.interviews !== undefined) { database.interviews = body.interviews; changed = true; }
+      if (body.interviewResults !== undefined) { database.interviewResults = body.interviewResults; changed = true; }
+      if (body.onboardingRecords !== undefined) { database.onboardingRecords = body.onboardingRecords; changed = true; }
+      if (body.history !== undefined) { database.history = body.history; changed = true; }
+      if (body.counters !== undefined) { database.counters = body.counters; changed = true; }
+      if (changed) saveToJsonBin();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, message: "Da luu du lieu" }));
     }).catch(function(err) {
-      res.writeHead(500, { "Content-Type": "application/json" });
+      res.writeHead(400, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: false, message: err.message }));
     });
     return true;
   }
-
+  if (req.url === "/api/reload" && req.method === "GET") {
+    loadFromJsonBin().then(function() {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        success: true,
+        recruitmentRequests: database.recruitmentRequests.length,
+        candidates: database.candidates.length
+      }));
+    });
+    return true;
+  }
   return false;
 }
 const htmlContent = `<!DOCTYPE html>
@@ -722,21 +766,25 @@ document.addEventListener("DOMContentLoaded",function(){initApp()});
 </html>`;
 
 const server = http.createServer((req, res) => {
-
   if (handleApi(req, res)) return;
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(htmlContent + scriptContent);
 });
 
-// Đọc dữ liệu từ JSONBin trước, rồi mới start server
 loadFromJsonBin().then(function() {
   server.listen(PORT, function() {
-    console.log("Server running on port " + PORT);
-    console.log("Database loaded with " + database.recruitmentRequests.length + " recruitment requests");
-    console.log("Database loaded with " + database.candidates.length + " candidates");
+    console.log('=================================');
+    console.log('Server running on port ' + PORT);
+    console.log('Data loaded: ' + isDataLoaded);
+    console.log('Recruitment: ' + database.recruitmentRequests.length);
+    console.log('Candidates: ' + database.candidates.length);
+    console.log('Interviews: ' + database.interviews.length);
+    console.log('Counters: ' + JSON.stringify(database.counters));
+    console.log('=================================');
   });
-}).catch(function() {
+}).catch(function(err) {
+  console.error('Loi khoi dong:', err.message);
   server.listen(PORT, function() {
-    console.log("Server running on port " + PORT + " (without saved data)");
+    console.log('Server running on port ' + PORT + ' (NO DATA)');
   });
 });
