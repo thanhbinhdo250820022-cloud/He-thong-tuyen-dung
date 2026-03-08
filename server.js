@@ -572,9 +572,10 @@ table tbody tr:hover{background:#e3f2fd}
 </div>
 <div id="printArea" style="display:none"></div>
 </div>
-\`; // END OF HTML PART - CONTINUES IN PART 2
+`; // END OF HTML PART - CONTINUES IN PART 2
 
-const scriptContent = `<script>
+const scriptContent = `
+<script>
 var recruitmentRequestCounter=1,interviewFormCounter=1,candidateCounter=1;
 var recruitmentRequests=[],candidates=[],interviews=[],interviewResults=[],onboardingRecords=[];
 var actionHistory=[];
