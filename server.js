@@ -54,7 +54,6 @@ function jsonbinRequest(method, data, retryCount) {
           } else {
             console.error('JSONBin error ' + res.statusCode + ':', body);
             if (retryCount < maxRetries) {
-              console.log('Retry lan ' + (retryCount + 1));
               setTimeout(function() {
                 jsonbinRequest(method, data, retryCount + 1).then(resolve).catch(reject);
               }, 1000 * (retryCount + 1));
@@ -87,6 +86,8 @@ function jsonbinRequest(method, data, retryCount) {
 
 function loadFromJsonBin() {
   console.log('Dang doc du lieu tu JSONBin...');
+  console.log('Bin ID: ' + JSONBIN_BIN_ID);
+  console.log('API Key exists: ' + (JSONBIN_API_KEY ? 'YES' : 'NO'));
   return jsonbinRequest('GET')
     .then(function(result) {
       if (result && result.record) {
