@@ -719,10 +719,10 @@ document.getElementById('btnExportProposedExcel').addEventListener('click',funct
 document.getElementById('btnExportOnboarding').addEventListener('click',function(){checkOnboardingExpired();var proposed=interviewResults.filter(function(r){return r.conclusion==='Đề xuất tuyển'});var h=['STT','Mã UV','Tên UV','Vị trí','Trạng thái'];var rows=proposed.map(function(r,i){var cd=candidates.find(function(c){return c.code===r.candidateCode});var ob=onboardingRecords.find(function(o){return o.candidateCode===r.candidateCode});var st=r.expiredStatus||(ob?'Đã nhận việc':'Chờ xác nhận');return[i+1,r.candidateCode,cd?cd.fullName:'',r.position,st]});exportDataToExcel(h,rows,'XacNhanNhanViec')});
 document.getElementById('btnExportHistory').addEventListener('click',function(){if(!isAdmin()){alert('Không có quyền xuất dữ liệu lịch sử!');return}var tbl=document.getElementById('historyDataTable');if(tbl)exportTableToExcel('historyDataTable','LichSuThaoTac');else alert('Chưa có dữ liệu')});
 document.addEventListener("DOMContentLoaded",function(){initApp()});
-</script>
+<\/script>
 </body>
 </html>
-\`;
+`;
 
 const server = http.createServer((req, res) => {
   if (handleApi(req, res)) return;
