@@ -208,7 +208,7 @@ function handleApi(req, res) {
   return false;
 }
 
-const htmlContent = \`<!DOCTYPE html>
+const htmlContent = `<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -574,8 +574,7 @@ table tbody tr:hover{background:#e3f2fd}
 </div>
 \`; // END OF HTML PART - CONTINUES IN PART 2
 
-const scriptContent = \`
-<script>
+const scriptContent = `<script>
 var recruitmentRequestCounter=1,interviewFormCounter=1,candidateCounter=1;
 var recruitmentRequests=[],candidates=[],interviews=[],interviewResults=[],onboardingRecords=[];
 var actionHistory=[];
