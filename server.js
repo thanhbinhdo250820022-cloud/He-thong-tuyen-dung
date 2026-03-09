@@ -607,7 +607,9 @@ table tbody tr:hover{background:#e3f2fd}
 <div id="printArea" style="display:none"></div>
 </div>
 `;
-const scriptContent = `
+// ===== THAY THẾ TỪ DÒNG "const scriptContent = ..." ĐẾN HẾT FILE =====
+
+const fullScript = `
 <script>
 var recruitmentRequestCounter=1,interviewFormCounter=1,candidateCounter=1,resultCounter=1,employeeCounter=268600;
 var recruitmentRequests=[],candidates=[],interviews=[],interviewResults=[],onboardingRecords=[];
@@ -627,13 +629,11 @@ function isAdmin(){if(!currentUser)return false;return currentUser.position==='T
 function updateAdminVisibility(){var btnHistory=document.getElementById('btnGoHistory');if(isAdmin()){btnHistory.style.display='block'}else{btnHistory.style.display='none'}}
 function showView(id){document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});var t=document.getElementById(id);if(t)t.classList.add('active')}
 function goBack(id){showView(id)}
-
 function generateRecruitmentCode(){return'PR-HR-001-001-R'+String(recruitmentRequestCounter++).padStart(5,'0')}
 function generateCandidateCode(){return'PR-HR-001-001-C'+String(candidateCounter++).padStart(5,'0')}
 function generateInterviewCode(){return'PR-HR-001-001-T'+String(interviewFormCounter++).padStart(5,'0')}
 function generateResultCode(){return'PR-HR-001-001-A'+String(resultCounter++).padStart(5,'0')}
 function generateEmployeeCode(){return String(employeeCounter++)}
-
 function formatDate(d){if(!d)return'';var dt=new Date(d);return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear()}
 function formatDateTime(d){if(!d)return'';var dt=new Date(d);return formatDate(d)+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')}
 function getNow(){return new Date().toISOString()}
@@ -648,11 +648,9 @@ function operatorInfo(r){return(r.employeeName||'')+(r.employeeId?' ('+r.employe
 function addHistory(action,target,code,detail){actionHistory.push({action:action,target:target,code:code,detail:detail||'',employeeId:currentUser?currentUser.id:'',employeeName:currentUser?currentUser.name:'',employeePosition:currentUser?currentUser.position:'',employeeDept:currentUser?currentUser.department:'',timestamp:getNow()});saveDataToServer()}
 function getStatusBadge(status){var cls='badge-gray';if(status==='Đang tuyển'||status==='Đã lên lịch'||status==='Đã cập nhật thông tin'||status==='Đang thử việc'||status==='Chờ quyết định')cls='badge-orange';else if(status==='Đã tuyển đủ'||status==='Đạt'||status==='Đã phỏng vấn'||status==='Đã xác nhận nhận việc'||status==='Chính thức')cls='badge-green';else if(status==='Không đạt'||status==='Hủy phỏng vấn'||status==='Nghỉ việc')cls='badge-red';else if(status==='Đã hẹn phỏng vấn'||status==='Đã xác nhận phỏng vấn')cls='badge-blue';return'<span class="badge '+cls+'">'+status+'</span>'}
 function printContent(html){var pa=document.getElementById('printArea');pa.innerHTML=html;pa.style.display='block';window.print();pa.style.display='none'}
-
 function canEditRecord(record){if(!record.createdDate&&!record.timestamp)return true;var created=new Date(record.createdDate||record.timestamp);var now=new Date();var hours=(now-created)/(1000*60*60);if(hours>EDIT_WINDOW_HOURS)return false;if(getEditCount(record)>=MAX_EDIT_COUNT)return false;return true}
 function canDeleteRecord(record){if(!record.createdDate&&!record.timestamp)return true;var created=new Date(record.createdDate||record.timestamp);var now=new Date();var hours=(now-created)/(1000*60*60);return hours<=EDIT_WINDOW_HOURS}
 
-// ==================== RECRUITMENT TABLE ====================
 function renderRecruitmentTable(filtered){var data=filtered||recruitmentRequests;var c=document.getElementById('recruitmentTableContainer');if(!data.length){c.innerHTML='<p style="text-align:center;color:#999;padding:20px">Chưa có dữ liệu</p>';return}
 var h='<table id="recruitmentDataTable"><thead><tr><th>STT</th><th>Mã yêu cầu</th><th>Phòng ban</th><th>Vị trí tuyển</th><th>Số lượng</th><th>Lý do tuyển</th><th>Mức lương dự kiến</th><th>Ngày cần nhân sự</th><th>Người yêu cầu</th><th>Ngày tạo yêu cầu</th><th>Trạng thái</th><th>Số lần chỉnh sửa</th><th>Người thao tác</th><th>Thời gian thao tác</th><th>Thao tác</th></tr></thead><tbody>';
 data.forEach(function(r,i){var status=r.status||'Đang tuyển';
@@ -695,7 +693,6 @@ showView('recruitmentFormView')}
 
 function deleteRecruitment(code){var r=recruitmentRequests.find(function(x){return x.code===code});if(!r)return;if(!canDeleteRecord(r)){alert('Không thể xóa! Đã quá 24 giờ kể từ lần tạo.');return}if(!confirm('Bạn có chắc muốn xóa '+code+'?'))return;var idx=recruitmentRequests.findIndex(function(x){return x.code===code});if(idx===-1)return;recruitmentRequests.splice(idx,1);addHistory('Xóa','Nhu cầu tuyển dụng',code,'Đã xóa');alert('Đã xóa '+code);renderRecruitmentTable()}
 
-// ==================== CANDIDATE TABLE ====================
 function renderCandidateTable(filtered){var data=filtered||candidates;var c=document.getElementById('candidateTableContainer');if(!data.length){c.innerHTML='<p style="text-align:center;color:#999;padding:20px">Chưa có dữ liệu</p>';return}
 var h='<table id="candidateDataTable"><thead><tr><th>STT</th><th>Mã ứng viên</th><th>Họ tên</th><th>Giới tính</th><th>Năm sinh</th><th>SĐT</th><th>Email</th><th>Vị trí ứng tuyển</th><th>Mã yêu cầu TD</th><th>Nguồn tuyển</th><th>Ngày nộp hồ sơ</th><th>Trạng thái</th><th>Số lần chỉnh sửa</th><th>Người thao tác</th><th>Thời gian thao tác</th><th>Thao tác</th></tr></thead><tbody>';
 data.forEach(function(c2,i){var status=c2.status||'Đã cập nhật thông tin';
@@ -726,7 +723,6 @@ showView('candidateFormView')}
 
 function deleteCandidate(code){var c=candidates.find(function(x){return x.code===code});if(!c)return;if(!canDeleteRecord(c)){alert('Không thể xóa! Đã quá 24 giờ.');return}if(!confirm('Bạn có chắc muốn xóa ứng viên '+code+'?'))return;var idx=candidates.findIndex(function(x){return x.code===code});if(idx===-1)return;candidates.splice(idx,1);addHistory('Xóa','Ứng viên',code,'Đã xóa');alert('Đã xóa '+code);renderCandidateTable()}
 
-// ==================== INTERVIEW TABLE ====================
 function renderInterviewTable(filtered){var data=filtered||interviews;var c=document.getElementById('interviewTableContainer');if(!data.length){c.innerHTML='<p style="text-align:center;color:#999;padding:20px">Chưa có dữ liệu</p>';return}
 var h='<table id="interviewDataTable"><thead><tr><th>STT</th><th>Mã lịch</th><th>Mã ứng viên</th><th>Họ tên</th><th>Vị trí</th><th>Ngày phỏng vấn</th><th>Giờ phỏng vấn</th><th>Hình thức</th><th>Người phỏng vấn</th><th>Địa điểm</th><th>Bài kiểm tra</th><th>Trạng thái</th><th>Số lần chỉnh sửa</th><th>Người thao tác</th><th>Thời gian thao tác</th><th>Thao tác</th></tr></thead><tbody>';
 data.forEach(function(iv,i){var cd=candidates.find(function(c){return c.code===iv.candidateCode});var status=iv.status||'Đã lên lịch';
@@ -764,9 +760,7 @@ document.querySelectorAll('input[name="ivTest"]').forEach(function(cb){cb.checke
 showView('interviewFormView')}
 
 function deleteInterview(code){var iv=interviews.find(function(x){return x.code===code});if(!iv)return;if(!canDeleteRecord(iv)){alert('Không thể xóa!');return}if(!confirm('Xóa lịch phỏng vấn '+code+'?'))return;var idx=interviews.findIndex(function(x){return x.code===code});if(idx===-1)return;interviews.splice(idx,1);addHistory('Xóa','Lịch phỏng vấn',code,'Đã xóa');alert('Đã xóa');renderInterviewTable()}
-`;
-const scriptContent2 = `
-// ==================== RESULT TABLE ====================
+
 function renderResultTable(filtered){var data=filtered||interviewResults;var c=document.getElementById('resultTableContainer');if(!data.length){c.innerHTML='<p style="text-align:center;color:#999;padding:20px">Chưa có dữ liệu</p>';return}
 var h='<table id="resultDataTable"><thead><tr><th>STT</th><th>Mã kết quả</th><th>Mã ứng viên</th><th>Họ tên</th><th>Vị trí</th><th>Người phỏng vấn</th><th>Điểm đánh giá</th><th>Điểm bài kiểm tra</th><th>Kết quả</th><th>Mức lương đề xuất</th><th>Ngày cập nhật</th><th>Ghi chú</th><th>Số lần chỉnh sửa</th><th>Người thao tác</th><th>Thời gian thao tác</th><th>Thao tác</th></tr></thead><tbody>';
 data.forEach(function(r,i){var cd=candidates.find(function(c){return c.code===r.candidateCode});var conclusion=r.conclusion||'Chờ quyết định';
@@ -810,7 +804,6 @@ showView('resultFormView')}
 
 function deleteResult(code){var r=interviewResults.find(function(x){return x.code===code});if(!r)return;if(!canDeleteRecord(r)){alert('Không thể xóa!');return}if(!confirm('Xóa kết quả '+code+'?'))return;var idx=interviewResults.findIndex(function(x){return x.code===code});if(idx===-1)return;interviewResults.splice(idx,1);addHistory('Xóa','Kết quả phỏng vấn',code,'Đã xóa');alert('Đã xóa');renderResultTable()}
 
-// ==================== ONBOARDING TABLE ====================
 function renderOnboardingTable(filtered){var data=filtered||onboardingRecords;var c=document.getElementById('onboardingTableContainer');if(!data.length){c.innerHTML='<p style="text-align:center;color:#999;padding:20px">Chưa có dữ liệu</p>';return}
 var h='<table id="onboardingDataTable"><thead><tr><th>STT</th><th>Mã nhân viên</th><th>Họ tên</th><th>Phòng ban</th><th>Vị trí</th><th>Ngày nhận việc</th><th>Mức lương</th><th>Người quản lý</th><th>Loại hợp đồng</th><th>Trạng thái</th><th>Số lần chỉnh sửa</th><th>Người thao tác</th><th>Thời gian thao tác</th><th>Thao tác</th></tr></thead><tbody>';
 data.forEach(function(ob,i){var status=ob.status||'Đang thử việc';
@@ -841,24 +834,19 @@ showView('onboardingFormView')}
 
 function deleteOnboarding(code){var ob=onboardingRecords.find(function(x){return x.code===code});if(!ob)return;if(!canDeleteRecord(ob)){alert('Không thể xóa!');return}if(!confirm('Xóa nhân viên '+code+'?'))return;var idx=onboardingRecords.findIndex(function(x){return x.code===code});if(idx===-1)return;onboardingRecords.splice(idx,1);addHistory('Xóa','Nhân viên mới',code,'Đã xóa');alert('Đã xóa');renderOnboardingTable()}
 
-// ==================== HISTORY TABLE ====================
 function renderHistoryTable(filtered){var data=filtered||actionHistory;var c=document.getElementById('historyTableContainer');if(!data.length){c.innerHTML='<p style="text-align:center;color:#999;padding:20px">Chưa có lịch sử</p>';return}
 var h='<table id="historyDataTable"><thead><tr><th>STT</th><th>Hành động</th><th>Đối tượng</th><th>Mã</th><th>Chi tiết</th><th>Người thao tác</th><th>Chức vụ</th><th>Phòng ban</th><th>Thời gian</th></tr></thead><tbody>';
 data.slice().reverse().forEach(function(h2,i){h+='<tr><td>'+(i+1)+'</td><td><span class="badge '+(h2.action==='Xóa'?'badge-red':(h2.action==='Sửa'||h2.action==='Cập nhật'?'badge-orange':'badge-green'))+'">'+h2.action+'</span></td><td>'+h2.target+'</td><td>'+h2.code+'</td><td>'+h2.detail+'</td><td>'+h2.employeeName+' ('+h2.employeeId+')</td><td>'+h2.employeePosition+'</td><td>'+h2.employeeDept+'</td><td>'+formatDateTime(h2.timestamp)+'</td></tr>'});
 h+='</tbody></table>';c.innerHTML=h}
 
-// ==================== EXCEL EXPORT ====================
-function exportTableToExcel(tableId,fileName){var tbl=document.getElementById(tableId);if(!tbl){alert('Không có dữ liệu');return}var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>td{mso-number-format:"\\\\\\\\@";white-space:normal;word-wrap:break-word;max-width:200px}</style></head><body>'+tbl.outerHTML+'</body></html>';var blob=new Blob([html],{type:'application/vnd.ms-excel'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fileName+'.xls';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)}
+function exportTableToExcel(tableId,fileName){var tbl=document.getElementById(tableId);if(!tbl){alert('Không có dữ liệu');return}var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>td{mso-number-format:"\\\\@";white-space:normal;word-wrap:break-word;max-width:200px}</style></head><body>'+tbl.outerHTML+'</body></html>';var blob=new Blob([html],{type:'application/vnd.ms-excel'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=fileName+'.xls';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)}
 
-// ==================== LOGIN/LOGOUT ====================
 function validateLogin(){var e=[];var id=document.getElementById('loginEmpId').value.trim();var name=document.getElementById('loginEmpName').value.trim();if(!id)e.push('Mã nhân viên');if(!name)e.push('Họ và tên');if(name&&name!==name.toUpperCase())e.push('Họ và tên phải IN HOA');if(!document.getElementById('loginEmpPosition').value)e.push('Chức vụ');if(!document.getElementById('loginEmpDept').value)e.push('Phòng ban');if(e.length>0){alert('Vui lòng kiểm tra:\\n- '+e.join('\\n- '));return false}return true}
 
 function doLogin(){if(!validateLogin())return;currentUser={id:document.getElementById('loginEmpId').value.trim(),name:document.getElementById('loginEmpName').value.trim().toUpperCase(),position:document.getElementById('loginEmpPosition').value,department:document.getElementById('loginEmpDept').value};document.getElementById('barEmpId').textContent=currentUser.id;document.getElementById('barEmpName').textContent=currentUser.name;document.getElementById('barEmpPosition').textContent=currentUser.position;document.getElementById('barEmpDept').textContent=currentUser.department;document.getElementById('loginView').classList.remove('active');document.getElementById('appContainer').style.display='block';showView('mainView');updateClock();clockInterval=setInterval(updateClock,1000);addHistory('Đăng nhập','Hệ thống',currentUser.id,currentUser.name+' đã đăng nhập');updateAdminVisibility()}
 
 function doLogout(){addHistory('Đăng xuất','Hệ thống',currentUser?currentUser.id:'','Đã đăng xuất');currentUser=null;if(clockInterval){clearInterval(clockInterval);clockInterval=null}document.getElementById('appContainer').style.display='none';document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});document.getElementById('loginEmpId').value='';document.getElementById('loginEmpName').value='';document.getElementById('loginEmpPosition').selectedIndex=0;document.getElementById('loginEmpDept').selectedIndex=0;showView('loginView')}
-`;
-const scriptContent3 = `
-// ==================== INIT & EVENT LISTENERS ====================
+
 function initApp(){
 populateSelect('loginEmpDept',departments,'Chọn phòng ban');
 populateSelect('recDepartment',departments,'Chọn phòng ban');
@@ -869,7 +857,6 @@ document.getElementById('btnLogin').addEventListener('click',function(){doLogin(
 document.getElementById('loginEmpName').addEventListener('input',function(){this.value=this.value.toUpperCase()});
 document.getElementById('btnLogout').addEventListener('click',function(){if(confirm('Bạn có chắc muốn đăng xuất?'))doLogout()});
 
-// Navigation
 document.getElementById('btnGoRecruitment').addEventListener('click',function(){renderRecruitmentTable();showView('recruitmentView')});
 document.getElementById('btnGoCandidate').addEventListener('click',function(){renderCandidateTable();showView('candidateView')});
 document.getElementById('btnGoInterview').addEventListener('click',function(){renderInterviewTable();showView('interviewView')});
@@ -877,7 +864,6 @@ document.getElementById('btnGoResult').addEventListener('click',function(){rende
 document.getElementById('btnGoOnboarding').addEventListener('click',function(){renderOnboardingTable();showView('onboardingView')});
 document.getElementById('btnGoHistory').addEventListener('click',function(){if(!isAdmin()){alert('Bạn không có quyền');return}renderHistoryTable();showView('historyView')});
 
-// Back buttons
 document.getElementById('btnBackFromRecruitment').addEventListener('click',function(){goBack('mainView')});
 document.getElementById('btnBackFromRecruitmentForm').addEventListener('click',function(){editingRecruitmentCode=null;document.getElementById('recruitmentEditInfo').style.display='none';renderRecruitmentTable();goBack('recruitmentView')});
 document.getElementById('btnBackFromRecruitmentDetail').addEventListener('click',function(){renderRecruitmentTable();goBack('recruitmentView')});
@@ -895,14 +881,12 @@ document.getElementById('btnBackFromOnboardingForm').addEventListener('click',fu
 document.getElementById('btnBackFromOnboardingDetail').addEventListener('click',function(){renderOnboardingTable();goBack('onboardingView')});
 document.getElementById('btnBackFromHistory').addEventListener('click',function(){goBack('mainView')});
 
-// Print buttons
 document.getElementById('btnPrintRecruitment').addEventListener('click',function(){printContent(document.getElementById('recruitmentDetailContent').innerHTML)});
 document.getElementById('btnPrintCandidate').addEventListener('click',function(){printContent(document.getElementById('candidateDetailContent').innerHTML)});
 document.getElementById('btnPrintInterview').addEventListener('click',function(){printContent(document.getElementById('interviewDetailContent').innerHTML)});
 document.getElementById('btnPrintResult').addEventListener('click',function(){printContent(document.getElementById('resultDetailContent').innerHTML)});
 document.getElementById('btnPrintOnboarding').addEventListener('click',function(){printContent(document.getElementById('onboardingDetailContent').innerHTML)});
 
-// Detail edit/delete buttons
 document.getElementById('btnEditRecruitment').addEventListener('click',function(){var code=document.getElementById('recruitmentDetailContent').getAttribute('data-code');if(code)startEditRecruitment(code)});
 document.getElementById('btnDeleteRecruitment').addEventListener('click',function(){var code=document.getElementById('recruitmentDetailContent').getAttribute('data-code');if(code){deleteRecruitment(code);showView('recruitmentView')}});
 document.getElementById('btnEditCandidate').addEventListener('click',function(){var code=document.getElementById('candidateDetailContent').getAttribute('data-code');if(code)startEditCandidate(code)});
@@ -914,7 +898,6 @@ document.getElementById('btnDeleteResultDetail').addEventListener('click',functi
 document.getElementById('btnEditOnboardingDetail').addEventListener('click',function(){var code=document.getElementById('onboardingDetailContent').getAttribute('data-code');if(code)startEditOnboarding(code)});
 document.getElementById('btnDeleteOnboardingDetail').addEventListener('click',function(){var code=document.getElementById('onboardingDetailContent').getAttribute('data-code');if(code){deleteOnboarding(code);showView('onboardingView')}});
 
-// Add buttons
 document.getElementById('btnAddRecruitment').addEventListener('click',function(){editingRecruitmentCode=null;document.getElementById('recruitmentFormTitle').textContent='Tạo nhu cầu tuyển dụng';document.getElementById('recruitmentEditInfo').style.display='none';document.getElementById('recDepartment').selectedIndex=0;document.getElementById('recPosition').value='';document.getElementById('recQuantity').value='1';document.getElementById('recSalaryRange').value='';document.querySelectorAll('input[name="recReason"]').forEach(function(cb){cb.checked=false});document.getElementById('recNeedDate').value='';document.getElementById('recProposer').value='';showView('recruitmentFormView')});
 
 document.getElementById('btnAddCandidate').addEventListener('click',function(){editingCandidateCode=null;document.getElementById('candidateFormTitle').textContent='THÔNG TIN ỨNG VIÊN';document.getElementById('candidateEditInfo').style.display='none';document.getElementById('candFullName').value='';document.getElementById('candGender').selectedIndex=0;document.getElementById('candBirthYear').value='';document.getElementById('candPhone').value='';document.getElementById('candEmail').value='';document.getElementById('candPosition').value='';document.getElementById('candRecruitCode').value='';document.getElementById('candSource').selectedIndex=0;document.getElementById('candSubmitDate').value='';showView('candidateFormView')});
@@ -925,11 +908,9 @@ document.getElementById('btnAddResult').addEventListener('click',function(){edit
 
 document.getElementById('btnAddOnboarding').addEventListener('click',function(){editingOnboardingCode=null;document.getElementById('onboardingFormTitle').textContent='Thêm nhân viên mới';document.getElementById('obFullName').value='';document.getElementById('obDepartment').selectedIndex=0;document.getElementById('obPosition').value='';document.getElementById('obStartDate').value='';document.getElementById('obSalary').value='';document.getElementById('obManager').value='';document.getElementById('obContractType').selectedIndex=0;document.getElementById('obStatus').selectedIndex=0;showView('onboardingFormView')});
 
-// Auto load test scores when candidate code changes in result form
 document.getElementById('resCandCode').addEventListener('change',function(){var candCode=this.value.trim();if(!candCode)return;var iv=interviews.find(function(x){return x.candidateCode===candCode});if(iv&&iv.requiredTests){buildTestScoreFields(iv.requiredTests)}else{document.getElementById('resTestScoresContainer').innerHTML=''}});
 document.getElementById('resCandCode').addEventListener('blur',function(){var candCode=this.value.trim();if(!candCode)return;var iv=interviews.find(function(x){return x.candidateCode===candCode});if(iv&&iv.requiredTests){buildTestScoreFields(iv.requiredTests)}else{document.getElementById('resTestScoresContainer').innerHTML=''}});
 
-// Submit forms - uppercase handlers
 document.getElementById('recProposer').addEventListener('input',function(){this.value=this.value.toUpperCase()});
 document.getElementById('candFullName').addEventListener('input',function(){this.value=this.value.toUpperCase()});
 document.getElementById('ivInterviewer').addEventListener('input',function(){this.value=this.value.toUpperCase()});
@@ -937,7 +918,6 @@ document.getElementById('resInterviewer').addEventListener('input',function(){th
 document.getElementById('obFullName').addEventListener('input',function(){this.value=this.value.toUpperCase()});
 document.getElementById('obManager').addEventListener('input',function(){this.value=this.value.toUpperCase()});
 
-// Submit Recruitment
 document.getElementById('btnSubmitRecruitment').addEventListener('click',function(){
 var e=[];if(!document.getElementById('recDepartment').value)e.push('Phòng ban');if(!document.getElementById('recPosition').value.trim())e.push('Vị trí tuyển');if(!document.getElementById('recQuantity').value)e.push('Số lượng');var reasons=[];document.querySelectorAll('input[name="recReason"]:checked').forEach(function(cb){reasons.push(cb.value)});if(reasons.length===0)e.push('Lý do tuyển');if(!document.getElementById('recNeedDate').value)e.push('Ngày cần nhân sự');var proposer=document.getElementById('recProposer').value.trim();if(!proposer)e.push('Người yêu cầu');if(e.length>0){alert('Vui lòng điền:\\n- '+e.join('\\n- '));return}
 var stamp=getUserStamp();
@@ -945,7 +925,6 @@ if(editingRecruitmentCode){var rec=recruitmentRequests.find(function(r){return r
 else{var rec={code:generateRecruitmentCode(),department:document.getElementById('recDepartment').value,position:document.getElementById('recPosition').value.trim(),quantity:parseInt(document.getElementById('recQuantity').value),salaryRange:document.getElementById('recSalaryRange').value.trim(),reasons:reasons,needDate:document.getElementById('recNeedDate').value,proposer:proposer,createdDate:getNow(),status:'Đang tuyển',employeeId:stamp.employeeId,employeeName:stamp.employeeName,employeePosition:stamp.employeePosition,employeeDept:stamp.employeeDept,timestamp:stamp.timestamp,editHistory:[]};recruitmentRequests.push(rec);addHistory('Tạo mới','Nhu cầu tuyển dụng',rec.code,'Tạo mới: '+rec.position);alert('Tạo thành công! Mã: '+rec.code)}
 renderRecruitmentTable();showView('recruitmentView')});
 
-// Submit Candidate
 document.getElementById('btnSubmitCandidate').addEventListener('click',function(){
 var e=[];var name=document.getElementById('candFullName').value.trim();if(!name)e.push('Họ tên');if(!document.getElementById('candGender').value)e.push('Giới tính');if(!document.getElementById('candBirthYear').value)e.push('Năm sinh');var phone=document.getElementById('candPhone').value.trim();if(!phone)e.push('SĐT');if(!document.getElementById('candPosition').value.trim())e.push('Vị trí ứng tuyển');if(!document.getElementById('candRecruitCode').value.trim())e.push('Mã yêu cầu TD');if(!document.getElementById('candSource').value)e.push('Nguồn tuyển');if(!document.getElementById('candSubmitDate').value)e.push('Ngày nộp hồ sơ');if(e.length>0){alert('Vui lòng kiểm tra:\\n- '+e.join('\\n- '));return}
 var stamp=getUserStamp();
@@ -953,7 +932,6 @@ if(editingCandidateCode){var c=candidates.find(function(x){return x.code===editi
 else{var c={code:generateCandidateCode(),fullName:name,gender:document.getElementById('candGender').value,birthYear:document.getElementById('candBirthYear').value,phone:phone,email:document.getElementById('candEmail').value.trim(),position:document.getElementById('candPosition').value.trim(),recruitCode:document.getElementById('candRecruitCode').value.trim(),source:document.getElementById('candSource').value,submitDate:document.getElementById('candSubmitDate').value,status:'Đã cập nhật thông tin',employeeId:stamp.employeeId,employeeName:stamp.employeeName,employeePosition:stamp.employeePosition,employeeDept:stamp.employeeDept,timestamp:stamp.timestamp,createdDate:getNow(),editHistory:[]};candidates.push(c);addHistory('Tạo mới','Ứng viên',c.code,'Thêm mới: '+c.fullName);alert('Lưu thành công! Mã: '+c.code)}
 renderCandidateTable();showView('candidateView')});
 
-// Submit Interview
 document.getElementById('btnSubmitInterview').addEventListener('click',function(){
 var e=[];if(!document.getElementById('ivCandCode').value.trim())e.push('Mã ứng viên');if(!document.getElementById('ivPosition').value.trim())e.push('Vị trí');if(!document.getElementById('ivDate').value)e.push('Ngày phỏng vấn');if(!document.getElementById('ivTime').value)e.push('Giờ phỏng vấn');if(!document.getElementById('ivFormat').value)e.push('Hình thức');if(!document.getElementById('ivInterviewer').value.trim())e.push('Người phỏng vấn');if(!document.getElementById('ivLocation').value.trim())e.push('Địa điểm');if(e.length>0){alert('Vui lòng kiểm tra:\\n- '+e.join('\\n- '));return}
 var requiredTests=[];document.querySelectorAll('input[name="ivTest"]:checked').forEach(function(cb){requiredTests.push(cb.value)});
@@ -962,7 +940,6 @@ if(editingInterviewCode){var iv=interviews.find(function(x){return x.code===edit
 else{var iv={code:generateInterviewCode(),candidateCode:document.getElementById('ivCandCode').value.trim(),position:document.getElementById('ivPosition').value.trim(),date:document.getElementById('ivDate').value,time:document.getElementById('ivTime').value,format:document.getElementById('ivFormat').value,interviewer:document.getElementById('ivInterviewer').value.trim(),location:document.getElementById('ivLocation').value.trim(),requiredTests:requiredTests,status:'Đã lên lịch',employeeId:stamp.employeeId,employeeName:stamp.employeeName,employeePosition:stamp.employeePosition,employeeDept:stamp.employeeDept,timestamp:stamp.timestamp,createdDate:getNow(),editHistory:[]};interviews.push(iv);addHistory('Tạo mới','Lịch phỏng vấn',iv.code,'Đặt lịch PV cho '+iv.candidateCode);alert('Tạo lịch thành công! Mã: '+iv.code)}
 renderInterviewTable();showView('interviewView')});
 
-// Submit Result
 document.getElementById('btnSubmitResult').addEventListener('click',function(){
 var e=[];if(!document.getElementById('resCandCode').value.trim())e.push('Mã ứng viên');if(!document.getElementById('resPosition').value.trim())e.push('Vị trí');if(!document.getElementById('resInterviewer').value.trim())e.push('Người phỏng vấn');if(!document.getElementById('resScore').value)e.push('Điểm đánh giá');if(!document.getElementById('resConclusion').value)e.push('Kết quả');if(e.length>0){alert('Vui lòng kiểm tra:\\n- '+e.join('\\n- '));return}
 var testScores={};document.querySelectorAll('.test-score-input').forEach(function(inp){var tn=inp.getAttribute('data-test');var val=inp.value;if(val)testScores[tn]=parseInt(val)});
@@ -971,7 +948,6 @@ if(editingResultCode){var r=interviewResults.find(function(x){return x.code===ed
 else{var r={code:generateResultCode(),candidateCode:document.getElementById('resCandCode').value.trim(),position:document.getElementById('resPosition').value.trim(),interviewer:document.getElementById('resInterviewer').value.trim(),score:document.getElementById('resScore').value,conclusion:document.getElementById('resConclusion').value,proposedSalary:document.getElementById('resSalary').value.trim(),note:document.getElementById('resNote').value.trim(),testScores:testScores,updatedDate:getNow(),employeeId:stamp.employeeId,employeeName:stamp.employeeName,employeePosition:stamp.employeePosition,employeeDept:stamp.employeeDept,timestamp:stamp.timestamp,createdDate:getNow(),editHistory:[]};interviewResults.push(r);addHistory('Tạo mới','Kết quả phỏng vấn',r.code,'Đánh giá ứng viên '+r.candidateCode);alert('Lưu kết quả thành công! Mã: '+r.code)}
 renderResultTable();showView('resultView')});
 
-// Submit Onboarding
 document.getElementById('btnSubmitOnboarding').addEventListener('click',function(){
 var e=[];var name=document.getElementById('obFullName').value.trim();if(!name)e.push('Họ tên');if(!document.getElementById('obDepartment').value)e.push('Phòng ban');if(!document.getElementById('obPosition').value.trim())e.push('Vị trí');if(!document.getElementById('obStartDate').value)e.push('Ngày nhận việc');if(!document.getElementById('obSalary').value.trim())e.push('Mức lương');if(!document.getElementById('obManager').value.trim())e.push('Người quản lý');if(!document.getElementById('obContractType').value)e.push('Loại hợp đồng');if(!document.getElementById('obStatus').value)e.push('Trạng thái');if(e.length>0){alert('Vui lòng kiểm tra:\\n- '+e.join('\\n- '));return}
 var stamp=getUserStamp();
@@ -979,7 +955,6 @@ if(editingOnboardingCode){var ob=onboardingRecords.find(function(x){return x.cod
 else{var ob={code:generateEmployeeCode(),fullName:name,department:document.getElementById('obDepartment').value,position:document.getElementById('obPosition').value.trim(),startDate:document.getElementById('obStartDate').value,salary:document.getElementById('obSalary').value.trim(),manager:document.getElementById('obManager').value.trim(),contractType:document.getElementById('obContractType').value,status:document.getElementById('obStatus').value,employeeId:stamp.employeeId,employeeName:stamp.employeeName,employeePosition:stamp.employeePosition,employeeDept:stamp.employeeDept,timestamp:stamp.timestamp,createdDate:getNow(),editHistory:[]};onboardingRecords.push(ob);addHistory('Tạo mới','Nhân viên mới',ob.code,'Thêm mới: '+ob.fullName);alert('Thêm thành công! Mã: '+ob.code)}
 renderOnboardingTable();showView('onboardingView')});
 
-// Search handlers - A: search by specific dates
 document.getElementById('btnSearchRecruitment').addEventListener('click',function(){var f=document.getElementById('recruitSearchFrom').value,t=document.getElementById('recruitSearchTo').value;var txt=(document.getElementById('recruitSearchText').value||'').trim().toLowerCase();var st=document.getElementById('recruitSearchStatus').value;renderRecruitmentTable(recruitmentRequests.filter(function(r){var ts=(r.createdDate||r.timestamp||'').substring(0,10);var matchDate=(!f||ts>=f)&&(!t||ts<=t);var matchText=!txt||(r.proposer||'').toLowerCase().includes(txt)||r.position.toLowerCase().includes(txt)||r.code.toLowerCase().includes(txt);var matchStatus=!st||(r.status||'Đang tuyển')===st;return matchDate&&matchText&&matchStatus}))});
 
 document.getElementById('btnSearchCandidate').addEventListener('click',function(){var f=document.getElementById('candidateSearchFrom').value,t=document.getElementById('candidateSearchTo').value;var txt=(document.getElementById('candidateSearchText').value||'').trim().toLowerCase();var st=document.getElementById('candidateSearchStatus').value;renderCandidateTable(candidates.filter(function(c){var ts=(c.submitDate||'').substring(0,10);var matchDate=(!f||ts>=f)&&(!t||ts<=t);var matchText=!txt||c.fullName.toLowerCase().includes(txt)||(c.phone&&c.phone.includes(txt))||c.code.toLowerCase().includes(txt);var matchStatus=!st||(c.status||'Đã cập nhật thông tin')===st;return matchDate&&matchText&&matchStatus}))});
@@ -992,7 +967,6 @@ document.getElementById('btnSearchOnboarding').addEventListener('click',function
 
 document.getElementById('btnSearchHistory').addEventListener('click',function(){var f=document.getElementById('historySearchFrom').value,t=document.getElementById('historySearchTo').value;renderHistoryTable(actionHistory.filter(function(h){var ts=h.timestamp.substring(0,10);return(!f||ts>=f)&&(!t||ts<=t)}))});
 
-// Export Excel
 document.getElementById('btnExportRecruitment').addEventListener('click',function(){exportTableToExcel('recruitmentDataTable','NhuCauTuyenDung')});
 document.getElementById('btnExportCandidate').addEventListener('click',function(){exportTableToExcel('candidateDataTable','ThongTinUngVien')});
 document.getElementById('btnExportInterview').addEventListener('click',function(){exportTableToExcel('interviewDataTable','LichPhongVan')});
@@ -1009,7 +983,7 @@ document.addEventListener("DOMContentLoaded",function(){initApp()});
 const server = http.createServer((req, res) => {
   if (handleApi(req, res)) return;
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  res.end(htmlContent + scriptContent + scriptContent2 + scriptContent3);
+  res.end(htmlContent + fullScript);
 });
 
 loadFromJsonBin().then(function() {
