@@ -915,7 +915,6 @@ function handleApi(req, res) {
 
  return false;
 }
-
 const htmlContent = `<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -1281,7 +1280,6 @@ table tbody tr:hover{background:#e3f2fd}
 <div id="printArea" style="display:none"></div>
 </div>
 `;
-
 const scriptContent = `
 <script>
 var recruitmentRequestCounter=1,interviewFormCounter=1,candidateCounter=1,resultCounter=1,employeeCounter=268600;
